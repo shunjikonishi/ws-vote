@@ -105,7 +105,7 @@ object VoteRoom {
     
     
     override def postStop() = {
-      Logger.debug("!!! postStop !!!")
+      Logger.info("!!! postStop !!!")
       rooms.values.filter(_.active).foreach(_.close)
       rooms = Map.empty[String, VoteRoom]
       MyRedisService.close
