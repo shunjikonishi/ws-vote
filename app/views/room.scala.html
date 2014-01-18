@@ -1,0 +1,38 @@
+@(setting: models.RoomSetting, counts: Map[String, String])(implicit request: RequestHeader)
+
+@main(setting.name) {
+<style>
+.vote {
+	width: 100%;
+	margin: 10px;
+	font-size: x-large;
+}
+#onError { display: none;}
+</style>
+<script src="@routes.Assets.at("javascripts/voteroom.js")" type="text/javascript"></script>
+<div class="container">
+	<div id="onError" class="alert alert-error">
+		<p>
+			<strong>Oops!</strong> <span></span>
+		</p>
+	</div>
+	<h2><span id="member"></span>人が推し事中</h2>
+	<h3>あなたの推し事　<span id="yours">0</span>回</h3>
+	<p>@setting.message</p>
+	@setting.buttons.map { b =>
+		<div>
+			<button class="button vote" style="background-color:#@b.color;" data-key="@b.key">
+				<div style="float:left;">@b.text</div>
+				<div style="float:right;" id="num-@b.key">@counts(b.key)</div>
+			</button>
+		</div>
+	}
+</div>
+<script>
+var app;
+$(function() {
+	var uri = "@Html(routes.Application.ws(setting.name).webSocketURL())";
+	app = new voteroom.VoteRoom(uri);
+})
+</script>
+}

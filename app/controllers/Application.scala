@@ -2,23 +2,36 @@ package controllers
 
 import play.api._
 import play.api.mvc._
-import flect.redis.RedisService
+import models._
 
 object Application extends Controller {
 
-  def index = Action {
-    Ok(views.html.index("WS Button"))
+  val defaultSetting = RoomSetting(
+    name="default",
+    message="お好きな色を押してください",
+    List(
+      Button("red", "赤", "ff0000"),
+      Button("yellow", "黄", "ffff00"),
+      Button("pink", "ピンク", "ff69b4"),
+      Button("green", "緑", "00ff7f"),
+      Button("purple", "紫", "9400d3")
+    )
+  )
+      
+  def index = Action { implicit request =>
+    Ok(views.html.index("Vote!"))
   }
   
-  val myRedisService = RedisService("redis://@localhost:6379")
-  
-  def echo = WebSocket.using[String] { _ =>
-    val channel = myRedisService.createPubSub("echo")
-    (channel.in, channel.out)
+  def room(name: String) = Action { implicit request =>
+    val setting = defaultSetting
+    val counts = setting.buttons.map { b =>
+      val cnt = MyRedisService.withClient(_.get(name + "#" + b.key))
+      (b.key, cnt.getOrElse("0"))
+    }.toMap
+    Ok(views.html.room(setting, counts))
   }
   
-  def echoTest = Action { implicit request =>
-    Ok(views.html.echoTest())
+  def ws(name: String) = WebSocket.async[String] { request =>
+    VoteRoom.join(name)
   }
-
 }
