@@ -58,10 +58,18 @@ class VoteRoom(name: String, redis: RedisService) {
   
   private def createIteratee: Iteratee[String, _] = {
     Iteratee.foreach[String] { msg =>
-      if (msg != "###dummy###") {
-        val key = voteKey(msg)
-        val count = redis.withClient(_.incr(key))
-        count.foreach(send("vote", msg, _))
+      msg match {
+        case "###member###" =>
+          val count = redis.withClient(_.get(member_key))
+          count.foreach { n =>
+            send("member", "now", n.toLong)
+          }
+        case "###dummy###" =>
+          //Do nothing
+        case _ =>
+          val key = voteKey(msg)
+          val count = redis.withClient(_.incr(key))
+          count.foreach(send("vote", msg, _))
       }
     }.map { _ =>
       val count = redis.withClient(_.decr(member_key))
