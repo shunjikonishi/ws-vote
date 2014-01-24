@@ -29,7 +29,8 @@ $(function() {
 			}
 		}
 		function openEvent(evt) {
-			console.log("open: " + retryCount)
+			console.log("open: " + retryCount);
+			ws.send("###member###");
 			retryCount = 0;
 		}
 		function closeEvent(evt) {
