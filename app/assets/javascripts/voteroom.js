@@ -61,5 +61,8 @@ $(function() {
 		    $member = $("#member"),
 		    $yours = $("#yours"),
 		    ws = createWebSocket();
+		setInterval(function() {
+			if (ws) ws.send("###dummy###");
+		}, 25000);
 	}
 })

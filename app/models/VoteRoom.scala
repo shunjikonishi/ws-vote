@@ -58,9 +58,11 @@ class VoteRoom(name: String, redis: RedisService) {
   
   private def createIteratee: Iteratee[String, _] = {
     Iteratee.foreach[String] { msg =>
-      val key = voteKey(msg)
-      val count = redis.withClient(_.incr(key))
-      count.foreach(send("vote", msg, _))
+      if (msg != "###dummy###") {
+        val key = voteKey(msg)
+        val count = redis.withClient(_.incr(key))
+        count.foreach(send("vote", msg, _))
+      }
     }.map { _ =>
       val count = redis.withClient(_.decr(member_key))
       count.foreach(send("member", "quit", _))
@@ -73,10 +75,9 @@ class VoteRoom(name: String, redis: RedisService) {
     Logger.info("Join to " + name)
     connect
     
+    val in = createIteratee
     val count = redis.withClient(_.incr(member_key))
     count.foreach(send("member", "join", _))
-    
-    val in = createIteratee
     (in, channel.out)
   }
   
