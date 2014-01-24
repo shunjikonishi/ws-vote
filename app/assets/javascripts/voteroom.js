@@ -59,6 +59,7 @@ $(function() {
 		var MAX_RETRY_COUNT = 5,
 		    RETRY_INTERVAL_BASE = 5,
 		    cnt = 0,
+		    retryCount = 0,
 		    $member = $("#member"),
 		    $yours = $("#yours"),
 		    ws = createWebSocket();
