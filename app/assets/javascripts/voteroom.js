@@ -52,6 +52,9 @@ $(function() {
 			}
 		}
 		$(".vote").click(function() {
+			if (!ws || ws.readyState != 1) {
+				ws = createWebSocket();
+			}
 			cnt++;
 			$yours.text(cnt);
 			ws.send($(this).attr("data-key"));
