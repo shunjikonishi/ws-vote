@@ -52,12 +52,19 @@ $(function() {
 			}
 		}
 		$(".vote").click(function() {
+			var b = $(this),
+				color = b.css("background-color");
+			b.css("background-color", "#ccc");
+			
 			if (!ws || ws.readyState != 1) {
 				ws = createWebSocket();
 			}
 			cnt++;
 			$yours.text(cnt);
 			ws.send($(this).attr("data-key"));
+			setTimeout(function() {
+				b.css("background-color", color);
+			}, 80);
 		});
 		var MAX_RETRY_COUNT = 5,
 		    RETRY_INTERVAL_BASE = 5,
