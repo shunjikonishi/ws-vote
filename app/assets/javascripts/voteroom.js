@@ -1,8 +1,38 @@
 if (typeof(voteroom) == "undefined") voteroom = {};
 
 $(function() {
+	var debug = new Debugger($("#debug"));
+	function Debugger($el, max) {
+		max = max | 10;
+		var cnt = 0;
+		function log(msg) {
+			if ($el.length) {
+				cnt++;
+				var $p = $("<p/>");
+				$p.text(msg);
+				
+				if (cnt > max) {
+					$el.find("p:first").remove();
+				}
+				$el.append($p);
+			}
+		}
+		$.extend(this, {
+			"log" : log
+		});
+	}
+	function isIOS() {
+		var ua = navigator.userAgent.toLowerCase();
+		debug.log("UserAgent: " + ua);
+		if (ua.indexOf("iphone") != -1) return true;
+		if (ua.indexOf("ipad") != -1) return true;
+		if (ua.indexOf("ipod") != -1) return true;
+		
+		return false;
+	}
 	voteroom.VoteRoom = function(uri) {
 		function createWebSocket() {
+			debug.log("createWebSocket");
 			var ret = new WebSocket(uri);
 			ret.onopen = openEvent;
 			ret.onmessage = receiveEvent;
@@ -10,6 +40,7 @@ $(function() {
 			return ret;
 		}
 		function receiveEvent(event) {
+			debug.log("receive: " + event.data);
 			var data = JSON.parse(event.data);
 			
 			// Handle errors
@@ -30,8 +61,10 @@ $(function() {
 		}
 		function openEvent(evt) {
 			console.log("open: " + retryCount);
-			ws.send("###member###");
 			retryCount = 0;
+			setTimeout(function() {
+				ws.send("###member###");
+			}, 1000);
 		}
 		function closeEvent(evt) {
 			console.log("close: " + retryCount)
@@ -46,26 +79,34 @@ $(function() {
 			}
 			retryCount++;
 		}
+		function clickEvent(evt) {
+			var b = $(this),
+				color = b.css("background-color"),
+				key = b.attr("data-key");
+			debug.log("click: " + key);
+			
+			b.css("background-color", "#ccc");
+			setTimeout(function() {
+				b.css("background-color", color);
+			}, 80);
+			
+			if (!ws || ws.readyState != 1) {
+				ws = createWebSocket();
+			}
+			ws.send(key);
+			cnt++;
+			$yours.text(cnt);
+		}
 		window.onunload = function() {
 			if (ws) {
 				ws.onclose = null;
 			}
 		}
-		$(".vote").click(function() {
-			var b = $(this),
-				color = b.css("background-color");
-			b.css("background-color", "#ccc");
-			
-			if (!ws || ws.readyState != 1) {
-				ws = createWebSocket();
-			}
-			cnt++;
-			$yours.text(cnt);
-			ws.send($(this).attr("data-key"));
-			setTimeout(function() {
-				b.css("background-color", color);
-			}, 80);
-		});
+		if (isIOS()) {
+			$(".vote").on("tapstart", clickEvent);
+		} else {
+			$(".vote").click(clickEvent);
+		}
 		var MAX_RETRY_COUNT = 5,
 		    RETRY_INTERVAL_BASE = 5,
 		    cnt = 0,
@@ -74,7 +115,7 @@ $(function() {
 		    $yours = $("#yours"),
 		    ws = createWebSocket();
 		setInterval(function() {
-			if (ws) ws.send("###member###");
+			if (ws) ws.send("###dummy###");
 		}, 25000);
 	}
 })
