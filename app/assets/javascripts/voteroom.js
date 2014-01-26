@@ -56,18 +56,18 @@ $(function() {
 			} else if (data.kind == "vote") {
 				$("#num-" + data.key).text(data.count);
 			} else {
-				console.log("Unknown event: " + event.data);
+				debug.log("Unknown event: " + event.data);
 			}
 		}
 		function openEvent(evt) {
-			console.log("open: " + retryCount);
+			debug.log("open: " + retryCount);
 			retryCount = 0;
 			setTimeout(function() {
 				ws.send("###member###");
 			}, 1000);
 		}
 		function closeEvent(evt) {
-			console.log("close: " + retryCount)
+			debug.log("close: " + retryCount)
 			if (retryCount > MAX_RETRY_COUNT) {
 				$("#onError span").text("Connection interrupted!")
 				$("#onError").show()
@@ -116,5 +116,8 @@ $(function() {
 		setInterval(function() {
 			if (ws) ws.send("###dummy###");
 		}, 25000);
+		if (location.hash == "#debug") {
+			$("#debug").show();
+		}
 	}
 })

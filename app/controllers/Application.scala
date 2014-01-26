@@ -3,6 +3,7 @@ package controllers
 import play.api._
 import play.api.mvc._
 import models._
+import java.net.URI
 
 object Application extends Controller {
 
@@ -33,5 +34,13 @@ object Application extends Controller {
   
   def ws(name: String) = WebSocket.async[String] { request =>
     VoteRoom.join(name)
+  }
+  
+  def loadtest(name: String, threads: Int, count: Int) = Action { implicit request =>
+    val uri = new URI(routes.Application.ws(name).webSocketURL())
+    val setting = defaultSetting
+    
+    new LoadTest(uri, setting).run(threads, count)
+    Ok(s"loadtest: $name, $threads, $count, $uri");
   }
 }

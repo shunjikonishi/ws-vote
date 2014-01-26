@@ -90,6 +90,10 @@ class VoteRoom(name: String, redis: RedisService) {
   }
   
   def close = {
+    val cnt = closer.count
+    if (cnt != 0) {
+      redis.withClient(_.decrby(member_key, cnt))
+    }
     channel.close
   }
 }
@@ -165,6 +169,7 @@ class Closer(body: => Any) {
   private var counter = 0
   private var active = true
   
+  def count = synchronized { counter}
   def closed = !active
   def inc = synchronized {
     if (active) counter += 1
