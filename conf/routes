@@ -3,7 +3,8 @@
 # ~~~~
 
 # Home page
-GET     /                           controllers.Application.index
+GET     /                           controllers.Application.redirectToDefault
+GET     /top                        controllers.Application.index
 GET     /rooms/:name                controllers.Application.room(name)
 GET     /ws/:name                   controllers.Application.ws(name)
 GET     /loadtest/:name             controllers.Application.loadtest(name, threads: Int ?= 10, count: Int ?= 1000)

@@ -19,6 +19,10 @@ object Application extends Controller {
     )
   )
       
+  def redirectToDefault = Action { implicit request =>
+    Redirect(routes.Application.room("default"))
+  }
+  
   def index = Action { implicit request =>
     Ok(views.html.index("Vote!"))
   }
