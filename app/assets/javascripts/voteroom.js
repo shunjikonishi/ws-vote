@@ -54,7 +54,13 @@ $(function() {
 			if (data.kind == "member") {
 				$member.text(data.count);
 			} else if (data.kind == "vote") {
-				$("#num-" + data.key).text(data.count);
+				var $b = $("#num-" + data.key),
+					n1 = parseInt(data.count),
+					n2 = parseInt($b.text());
+				debug.log(n1 + ", " + n2)
+				if (n1 > n2) {
+					$b.text(n1);
+				}
 			} else {
 				debug.log("Unknown event: " + event.data);
 			}
