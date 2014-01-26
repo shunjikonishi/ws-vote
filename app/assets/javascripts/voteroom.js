@@ -81,13 +81,12 @@ $(function() {
 		}
 		function clickEvent(evt) {
 			var b = $(this),
-				color = b.css("background-color"),
 				key = b.attr("data-key");
 			debug.log("click: " + key);
 			
 			b.css("background-color", "#ccc");
 			setTimeout(function() {
-				b.css("background-color", color);
+				b.css("background-color", b.attr("data-color"));
 			}, 80);
 			
 			if (!ws || ws.readyState != 1) {
@@ -103,7 +102,7 @@ $(function() {
 			}
 		}
 		if (isIOS()) {
-			$(".vote").on("tapstart", clickEvent);
+			$(".vote").on("touchstart", clickEvent);
 		} else {
 			$(".vote").click(clickEvent);
 		}

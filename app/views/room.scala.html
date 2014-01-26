@@ -25,7 +25,7 @@
 	<p>@setting.message</p>
 	@setting.buttons.map { b =>
 		<div>
-			<button class="button vote" style="background-color:#@b.color;" data-key="@b.key">
+			<button class="button vote" style="background-color:#@b.color;" data-key="@b.key" data-color="#@b.color">
 				<div style="float:left;">@b.text</div>
 				<div style="float:right;" id="num-@b.key">@counts(b.key)</div>
 			</button>
