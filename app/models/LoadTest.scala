@@ -9,7 +9,6 @@ class LoadTest(uri: URI, setting: RoomSetting) {
   
   def run(threads: Int, count: Int) {
     val loopCount = threads / setting.buttons.size + 1
-println(s"loopCount: $loopCount, $uri")
     val list = for (i <- 1 to loopCount) yield {
       setting.buttons.map { b =>
         new LoadTestThread(uri, b.key, count)
