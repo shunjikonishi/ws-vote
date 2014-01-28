@@ -32,6 +32,11 @@ $(function() {
 	}
 	voteroom.VoteRoom = function(uri) {
 		function createWebSocket() {
+			if (!window.WebSocket) {
+				$("#onError span").text("ブラウザがWebSocketをサポートしていません。");
+				$("#onError").show();
+				return null;
+			}
 			debug.log("createWebSocket");
 			var ret = new WebSocket(uri);
 			ret.onopen = openEvent;
