@@ -9,7 +9,7 @@ object Application extends Controller {
 
   val defaultSetting = RoomSetting(
     name="default",
-    message="お好きな色を押してください",
+    message="お好きな色を推してください",
     List(
       Button("red", "赤", "ff0000"),
       Button("yellow", "黄", "ffff00"),
