@@ -27,6 +27,7 @@ class LoadTestThread(uri: URI, msg: String, count: Int) extends Thread {
       client.connectBlocking
       for (i <- 1 to count) {
         client.send(msg)
+        Thread.sleep(60)
       }
     } finally {
       client.close

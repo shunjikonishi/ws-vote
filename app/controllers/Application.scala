@@ -41,7 +41,8 @@ object Application extends Controller {
   }
   
   def loadtest(name: String, threads: Int, count: Int) = Action { implicit request =>
-    val uri = new URI(routes.Application.ws(name).webSocketURL())
+    //val uri = new URI(routes.Application.ws(name).webSocketURL())
+    val uri = new URI("ws://ws-vote.herokuapp.com/ws/default")
     val setting = defaultSetting
     
     new LoadTest(uri, setting).run(threads, count)
