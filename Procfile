@@ -1,1 +1,1 @@
-web: target/universal/stage/bin/ws-button -Dhttp.port=$PORT -J-javaagent:target/universal/stage/lib/com.newrelic.agent.java.newrelic-agent-3.4.2.jar
+web: target/universal/stage/bin/ws-button -Dhttp.port=$PORT $JAVA_OPTS
