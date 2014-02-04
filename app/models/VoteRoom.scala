@@ -32,7 +32,7 @@ import flect.redis.RedisService
 object MyRedisService extends RedisService(Play.configuration.getString("redis.uri").get)
 
 case class Button(key: String, text: String, color: String)
-case class RoomSetting(name: String, message: String, buttons: List[Button])
+case class RoomSetting(name: String, title: String, message: String, buttons: List[Button])
 
 class VoteRoom(name: String, redis: RedisService) {
   
