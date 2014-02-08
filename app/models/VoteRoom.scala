@@ -28,107 +28,71 @@ import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
 import flect.redis.RedisService
+import flect.redis.Room
+import flect.redis.RoomHandler
 
 object MyRedisService extends RedisService(Play.configuration.getString("redis.uri").get)
 
 case class Button(key: String, text: String, color: String)
 case class RoomSetting(name: String, title: String, message: String, buttons: List[Button])
 
-class VoteRoom(setting: RoomSetting, redis: RedisService) {
+class VoteRoom(setting: RoomSetting, redis: RedisService) extends Room(setting.name, redis) {
   
   Logger.info("Create ChatRoom: " + setting.name)
-  val channel = redis.createPubSub(setting.name)
   
   private val member_key = setting.name + "-members"
   private def voteKey(key: String) = setting.name + "#" + key
   
-  private val closer: Closer = new Closer(this.close)
-  def active = !closer.closed
-  
-  def connect = closer.inc
-  def disconnect = closer.desc
-  
   case class Message(kind: String, key: String, count: Long)
   implicit val messageFormat = Json.format[Message]
   
-  private def send(kind: String, key: String, count: Long) {
+  private def createMessage(kind: String, key: String, count: Long) = {
     val msg = new Message(kind, key, count)
-    channel.send(Json.toJson(msg).toString)
+    Json.toJson(msg).toString
   }
   
-  private def createIteratee: Iteratee[String, _] = {
-    Iteratee.foreach[String] { msg =>
+  private def sendMessage(kind: String, key: String, count: Long) {
+    channel.send(createMessage(kind, key, count))
+  }
+  
+  def join: (Iteratee[String,_], Enumerator[String]) = {
+    val count = redis.withClient(_.incr(member_key))
+    count.foreach(sendMessage("member", "join", _))
+    val h = RoomHandler().clientMsg { msg =>
       msg match {
         case "###member###" =>
           val count = redis.withClient(_.get(member_key))
-          count.foreach { n =>
-            send("member", "now", n.toLong)
-          }
+          count.map(n => createMessage("member", "now", n.toLong))
         case "###dummy###" =>
-          //Do nothing
+          None
         case _ =>
           val key = voteKey(msg)
           val count = redis.withClient(_.incr(key))
-          count.foreach(send("vote", msg, _))
+          count.map(n => createMessage("vote", msg, n.toLong))
       }
-    }.map { _ =>
+      /*
+    }.redisMsg { msg =>
+      Logger.info("test: " + msg)
+      Some(msg)
+      */
+    }.disconnect { () =>
       val count = redis.withClient(_.decr(member_key))
-      count.foreach(send("member", "quit", _))
-      VoteRoom.quit(setting.name)
+      count.foreach(sendMessage("member", "quit", _))
       Logger.info("Quit from " + setting.name)
     }
-  }
-    
-  def join: (Iteratee[String,_], Enumerator[String]) = {
-    Logger.info("Join to " + setting.name)
-    connect
-    
-    val in = createIteratee
-    val count = redis.withClient(_.incr(member_key))
-    count.foreach(send("member", "join", _))
-    (in, channel.out)
+    join(h)
   }
   
-  def close = {
-    val cnt = closer.count
+  override def close = {
+    val cnt = memberCount
     if (cnt != 0) {
       redis.withClient(_.decrby(member_key, cnt))
     }
-    channel.close
+    super.close
   }
 }
 
 object VoteRoom {
-  
-  sealed class Msg
-  case class Join(room: String)
-  case class Quit(room: String)
-  
-  class MyActor extends Actor {
-    def receive = {
-      case Join(room) => 
-        val ret = try {
-          getRoom(room).map(_.join).getOrElse(error("Room not found."))
-        } catch {
-          case e: Exception =>
-            e.printStackTrace
-            error(e.getMessage)
-        }
-        sender ! ret
-      case Quit(room) =>
-        getRoom(room).foreach(_.disconnect)
-        sender ! true
-    }
-    
-    
-    override def postStop() = {
-      Logger.info("!!! postStop !!!")
-      rooms.values.filter(_.active).foreach(_.close)
-      rooms = Map.empty[String, VoteRoom]
-      MyRedisService.close
-      super.postStop()
-    }
-  }
   
   val defaultSetting = RoomSetting(
     name="default",
@@ -144,6 +108,7 @@ object VoteRoom {
   )
   
   private var settings = Map(defaultSetting.name -> defaultSetting)
+  private var rooms = Map.empty[String, VoteRoom]
   
   def getSetting(name: String): Option[RoomSetting] = settings.get(name)
   
@@ -151,15 +116,9 @@ object VoteRoom {
     (actor ? Join(room)).asInstanceOf[Future[(Iteratee[String,_], Enumerator[String])]]
   }
   
-  def quit(room: String) = {
-    actor ! Quit(room)
-  }
-  
-  private var rooms = Map.empty[String, VoteRoom]
-  
   private def getRoom(name: String): Option[VoteRoom] = {
     getSetting(name).map { setting =>
-      val room = rooms.get(name).filter(_.active)
+      val room = rooms.get(name).filter(_.isActive)
       room match {
         case Some(x) => x
         case None =>
@@ -179,28 +138,32 @@ object VoteRoom {
   
   implicit val timeout = Timeout(5 seconds)
   
-  val actor = Akka.system.actorOf(Props(new MyActor()))
-}
-
-class Closer(body: => Any) {
-  private var counter = 0
-  private var active = true
+  private val actor = Akka.system.actorOf(Props(new MyActor()))
   
-  def count = synchronized { counter}
-  def closed = !active
-  def inc = synchronized {
-    if (active) counter += 1
-  }
-  def desc = synchronized {
-    if (active) {
-      if (counter == 0) {
-        throw new IllegalStateException("Counter doesn't incremented.")
-      }
-      counter -= 1
-      if (counter == 0) {
-        active = false
-        body
-      }
+  private sealed class Msg
+  private case class Join(room: String)
+  
+  private class MyActor extends Actor {
+    def receive = {
+      case Join(room) => 
+        val ret = try {
+          getRoom(room).map(_.join).getOrElse(error("Room not found."))
+        } catch {
+          case e: Exception =>
+            e.printStackTrace
+            error(e.getMessage)
+        }
+        sender ! ret
+    }
+    
+    override def postStop() = {
+      Logger.info("!!! postStop !!!")
+      rooms.values.filter(_.isActive).foreach(_.close)
+      rooms = Map.empty[String, VoteRoom]
+      MyRedisService.close
+      super.postStop()
     }
   }
+  
 }
+
