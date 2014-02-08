@@ -7,19 +7,6 @@ import java.net.URI
 
 object Application extends Controller {
 
-  val defaultSetting = RoomSetting(
-    name="default",
-    title="DevSumi2014",
-    message="お好きな色を推してください",
-    List(
-      Button("red", "赤", "ff0000"),
-      Button("yellow", "黄", "ffff00"),
-      Button("pink", "ピンク", "ff69b4"),
-      Button("green", "緑", "00ff7f"),
-      Button("purple", "紫", "9400d3")
-    )
-  )
-      
   def redirectToDefault = Action { implicit request =>
     Redirect(routes.Application.room("default"))
   }
@@ -29,7 +16,7 @@ object Application extends Controller {
   }
   
   def room(name: String) = Action { implicit request =>
-    val setting = defaultSetting
+    val setting = VoteRoom.defaultSetting
     val counts = setting.buttons.map { b =>
       val cnt = MyRedisService.withClient(_.get(name + "#" + b.key))
       (b.key, cnt.getOrElse("0"))
@@ -44,7 +31,7 @@ object Application extends Controller {
   def loadtest(name: String, threads: Int, count: Int) = Action { implicit request =>
     //val uri = new URI(routes.Application.ws(name).webSocketURL())
     val uri = new URI("ws://ws-vote.herokuapp.com/ws/default")
-    val setting = defaultSetting
+    val setting = VoteRoom.defaultSetting
     
     new LoadTest(uri, setting).run(threads, count)
     Ok(s"loadtest: $name, $threads, $count, $uri");

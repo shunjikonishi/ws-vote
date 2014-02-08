@@ -34,13 +34,13 @@ object MyRedisService extends RedisService(Play.configuration.getString("redis.u
 case class Button(key: String, text: String, color: String)
 case class RoomSetting(name: String, title: String, message: String, buttons: List[Button])
 
-class VoteRoom(name: String, redis: RedisService) {
+class VoteRoom(setting: RoomSetting, redis: RedisService) {
   
-  Logger.info("Create ChatRoom: " + name)
-  val channel = redis.createPubSub(name)
+  Logger.info("Create ChatRoom: " + setting.name)
+  val channel = redis.createPubSub(setting.name)
   
-  private val member_key = name + "-members"
-  private def voteKey(key: String) = name + "#" + key
+  private val member_key = setting.name + "-members"
+  private def voteKey(key: String) = setting.name + "#" + key
   
   private val closer: Closer = new Closer(this.close)
   def active = !closer.closed
@@ -74,13 +74,13 @@ class VoteRoom(name: String, redis: RedisService) {
     }.map { _ =>
       val count = redis.withClient(_.decr(member_key))
       count.foreach(send("member", "quit", _))
-      VoteRoom.quit(name)
-      Logger.info("Quit from " + name)
+      VoteRoom.quit(setting.name)
+      Logger.info("Quit from " + setting.name)
     }
   }
     
   def join: (Iteratee[String,_], Enumerator[String]) = {
-    Logger.info("Join to " + name)
+    Logger.info("Join to " + setting.name)
     connect
     
     val in = createIteratee
@@ -100,6 +100,19 @@ class VoteRoom(name: String, redis: RedisService) {
 
 object VoteRoom {
   
+  val defaultSetting = RoomSetting(
+    name="default",
+    title="DevSumi2014",
+    message="お好きな色を推してください",
+    List(
+      Button("red", "赤", "ff0000"),
+      Button("yellow", "黄", "ffff00"),
+      Button("pink", "ピンク", "ff69b4"),
+      Button("green", "緑", "00ff7f"),
+      Button("purple", "紫", "9400d3")
+    )
+  )
+      
   sealed class Msg
   case class Join(room: String)
   case class Quit(room: String)
@@ -108,7 +121,7 @@ object VoteRoom {
     def receive = {
       case Join(room) => 
         val ret = try {
-          get(room).join
+          getRoom(room).join
         } catch {
           case e: Exception =>
             e.printStackTrace
@@ -116,7 +129,7 @@ object VoteRoom {
         }
         sender ! ret
       case Quit(room) =>
-        get(room).disconnect
+        getRoom(room).disconnect
         sender ! true
     }
     
@@ -140,17 +153,24 @@ object VoteRoom {
     actor ! Quit(room)
   }
   
+  var settings = Map(defaultSetting.name -> defaultSetting)
   var rooms = Map.empty[String, VoteRoom]
   
-  private def get(name: String): VoteRoom = {
-    val room = rooms.get(name).filter(_.active)
-    room match {
-      case Some(x) => x
-      case None =>
-        val ret = new VoteRoom(name, MyRedisService)
-        rooms = rooms + (name -> ret)
-        ret
-    }
+  def getSetting(name: String): Option[RoomSetting] = {
+    settings.get(name)
+  }
+  
+  private def getRoom(name: String): VoteRoom = {
+    getSetting(name).map { setting =>
+      val room = rooms.get(name).filter(_.active)
+      room match {
+        case Some(x) => x
+        case None =>
+          val ret = new VoteRoom(setting, MyRedisService)
+          rooms = rooms + (name -> ret)
+          ret
+      }
+    }.getOrElse(throw new IllegalStateException("Room not found: " + name))
   }
   
   def error(msg: String): (Iteratee[String,_], Enumerator[String]) = {

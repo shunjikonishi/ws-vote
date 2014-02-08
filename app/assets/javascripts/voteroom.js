@@ -3,10 +3,11 @@ if (typeof(voteroom) == "undefined") voteroom = {};
 $(function() {
 	var debug = new Debugger($("#debug"));
 	function Debugger($el, max) {
+		var enabled = (location.hash == "#debug");
 		max = max | 10;
 		var cnt = 0;
 		function log(msg) {
-			if ($el.length) {
+			if (enabled && $el.length) {
 				cnt++;
 				var $p = $("<p/>");
 				$p.text(msg);
@@ -23,7 +24,6 @@ $(function() {
 	}
 	function isIOS() {
 		var ua = navigator.userAgent.toLowerCase();
-		debug.log("UserAgent: " + ua);
 		if (ua.indexOf("iphone") != -1) return true;
 		if (ua.indexOf("ipad") != -1) return true;
 		if (ua.indexOf("ipod") != -1) return true;
@@ -45,7 +45,6 @@ $(function() {
 			return ret;
 		}
 		function receiveEvent(event) {
-			debug.log("receive: " + event.data);
 			var data = JSON.parse(event.data);
 			
 			// Handle errors
@@ -62,12 +61,9 @@ $(function() {
 				var $b = $("#num-" + data.key),
 					n1 = parseInt(data.count),
 					n2 = parseInt($b.text());
-				debug.log(n1 + ", " + n2)
 				if (n1 > n2) {
 					$b.text(n1);
 				}
-			} else {
-				debug.log("Unknown event: " + event.data);
 			}
 		}
 		function openEvent(evt) {
@@ -93,7 +89,6 @@ $(function() {
 		function clickEvent(evt) {
 			var b = $(this),
 				key = b.attr("data-key");
-			debug.log("click: " + key);
 			
 			b.css("background-color", "#ccc");
 			setTimeout(function() {
