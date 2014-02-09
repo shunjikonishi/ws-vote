@@ -4,6 +4,8 @@ import play.api._
 import play.api.mvc._
 import models._
 import java.net.URI
+import java.util.UUID
+import java.util.Date
 
 object Application extends Controller {
 
@@ -16,18 +18,29 @@ object Application extends Controller {
   }
   
   def room(name: String) = Action { implicit request =>
-    val setting = VoteRoom.getSetting(name)
-    setting.map { s =>
-      val counts = s.buttons.map { b =>
+    val d = new Date()
+    VoteRoom.getSetting(name).filter(_.canView(d)).map { setting =>
+      val counts = setting.buttons.map { b =>
         val cnt = MyRedisService.withClient(_.get(name + "#" + b.key))
         (b.key, cnt.getOrElse("0"))
       }.toMap
-      Ok(views.html.room(s, counts))
-    }.getOrElse(NotFound(s"Room $name doesn't exist."))
+      val clientId = request.cookies.get("clientId").map(_.value).getOrElse(UUID.randomUUID().toString)
+      Ok(views.html.room(setting, counts, clientId)).withCookies(
+        Cookie(name="clientId", value=clientId, maxAge=Some(3600 * 24 * 30))
+      )
+    }.getOrElse(NotFound("Room not found"))
+  }
+  
+  def reset(name: String) = Action { implicit request =>
+    VoteRoom.getSetting(name).map { setting =>
+      VoteRoom.getRoom(name).reset
+      Redirect(routes.Application.room(name))
+    }.getOrElse(NotFound("Room not found"))
   }
   
   def ws(name: String) = WebSocket.async[String] { request =>
-    VoteRoom.join(name)
+    val clientId = request.cookies.get("clientId").map(_.value).getOrElse(UUID.randomUUID().toString)
+    VoteRoom.join(name, clientId)
   }
   
   def loadtest(name: String, threads: Int, count: Int) = Action { implicit request =>

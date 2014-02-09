@@ -22,6 +22,7 @@ import play.api.libs.concurrent.Akka
 
 import akka.util.Timeout
 import akka.pattern.ask
+import java.util.Date
 
 import play.api.Play
 import play.api.Play.current
@@ -34,7 +35,21 @@ import flect.redis.RoomHandler
 object MyRedisService extends RedisService(Play.configuration.getString("redis.uri").get)
 
 case class Button(key: String, text: String, color: String)
-case class RoomSetting(name: String, title: String, message: String, buttons: List[Button])
+case class RoomSetting(
+  name: String, 
+  title: String, 
+  message: String, 
+  buttons: List[Button],
+  viewLimit: Option[Date] = None,
+  voteLimit: Option[Date] = None
+) {
+  def buttonText(key: String) = {
+    buttons.find(_.key == key).map(_.text)
+  }
+  
+  def canView(d: Date) = viewLimit.map(d.getTime < _.getTime).getOrElse(true)
+  def timeLimit = voteLimit.map(d => (d.getTime - System.currentTimeMillis) / 1000).getOrElse(0L)
+}
 
 class VoteRoom(setting: RoomSetting, redis: RedisService) extends Room(setting.name, redis) {
   
@@ -55,7 +70,8 @@ class VoteRoom(setting: RoomSetting, redis: RedisService) extends Room(setting.n
     channel.send(createMessage(kind, key, count))
   }
   
-  def join: (Iteratee[String,_], Enumerator[String]) = {
+  def join(clientId: String): (Iteratee[String,_], Enumerator[String]) = {
+    Logger.info("Join to " + setting.name)
     val count = redis.withClient(_.incr(member_key))
     count.foreach(sendMessage("member", "join", _))
     val h = RoomHandler().clientMsg { msg =>
@@ -68,6 +84,11 @@ class VoteRoom(setting: RoomSetting, redis: RedisService) extends Room(setting.n
         case _ =>
           val key = voteKey(msg)
           val count = redis.withClient(_.incr(key))
+          count.foreach { n =>
+            if ((n % 1000) == 0) {
+              channel.outChannel.push(createMessage(clientId,  msg, n))
+            }
+          }
           count.map(n => createMessage("vote", msg, n.toLong))
       }
       /*
@@ -83,12 +104,29 @@ class VoteRoom(setting: RoomSetting, redis: RedisService) extends Room(setting.n
     join(h)
   }
   
+  def reset = {
+    setting.buttons.foreach { b =>
+      val key = voteKey(b.key)
+      redis.withClient(_.del(key))
+    }
+  }
+  
   override def close = {
     val cnt = memberCount
     if (cnt != 0) {
       redis.withClient(_.decrby(member_key, cnt))
     }
     super.close
+    scheduler.cancel
+  }
+  
+  val scheduler = Akka.system.scheduler.schedule(20 seconds, 20 seconds) {
+    Logger.info("schedule");
+    val count = redis.withClient(_.get(member_key))
+    count.foreach { n =>
+      val msg = new Message("member", "now", n.toLong)
+      channel.outChannel.push(Json.toJson(msg).toString)
+    }
   }
 }
 
@@ -98,25 +136,26 @@ object VoteRoom {
     name="default",
     title="DevSumi2014",
     message="お好きな色を推してください",
-    List(
+    buttons=List(
       Button("red", "赤", "ff0000"),
       Button("yellow", "黄", "ffff00"),
       Button("pink", "ピンク", "ff69b4"),
       Button("green", "緑", "00ff7f"),
       Button("purple", "紫", "9400d3")
-    )
+    ),
+    voteLimit = Some(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2014-02-14 07:00:00"))
   )
   
   private var settings = Map(defaultSetting.name -> defaultSetting)
   private var rooms = Map.empty[String, VoteRoom]
-  
+      
   def getSetting(name: String): Option[RoomSetting] = settings.get(name)
   
-  def join(room: String): Future[(Iteratee[String,_], Enumerator[String])] = {
-    (actor ? Join(room)).asInstanceOf[Future[(Iteratee[String,_], Enumerator[String])]]
+  def join(room: String, clientId: String): Future[(Iteratee[String,_], Enumerator[String])] = {
+    (actor ? Join(room, clientId)).asInstanceOf[Future[(Iteratee[String,_], Enumerator[String])]]
   }
   
-  private def getRoom(name: String): Option[VoteRoom] = {
+  def getRoom(name: String): VoteRoom = {
     getSetting(name).map { setting =>
       val room = rooms.get(name).filter(_.isActive)
       room match {
@@ -126,7 +165,7 @@ object VoteRoom {
           rooms = rooms + (name -> ret)
           ret
       }
-    }
+    }.getOrElse(throw new IllegalStateException("Room not found: " + name))
   }
   
   def error(msg: String): (Iteratee[String,_], Enumerator[String]) = {
@@ -141,13 +180,13 @@ object VoteRoom {
   private val actor = Akka.system.actorOf(Props(new MyActor()))
   
   private sealed class Msg
-  private case class Join(room: String)
+  private case class Join(room: String, clientId: String)
   
-  private class MyActor extends Actor {
+  class MyActor extends Actor {
     def receive = {
-      case Join(room) => 
+      case Join(room, clientId) => 
         val ret = try {
-          getRoom(room).map(_.join).getOrElse(error("Room not found."))
+          getRoom(room).join(clientId)
         } catch {
           case e: Exception =>
             e.printStackTrace
@@ -155,6 +194,7 @@ object VoteRoom {
         }
         sender ! ret
     }
+    
     
     override def postStop() = {
       Logger.info("!!! postStop !!!")

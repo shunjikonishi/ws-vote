@@ -1,4 +1,4 @@
-@(setting: models.RoomSetting, counts: Map[String, String])(implicit request: RequestHeader)
+@(setting: models.RoomSetting, counts: Map[String, String], clientId: String)(implicit request: RequestHeader)
 
 @main(setting.title) {
 <style>
@@ -7,37 +7,47 @@
 	margin: 10px;
 	font-size: xx-large;
 }
-.vote:active!important {
-	background-color: #ccc;
+#message .label {
+	margin: 5px 10px 5px 20px;
 }
-
-#onError { display: none;}
+#onError {
+	display: none;
+}
 </style>
 <script src="@routes.Assets.at("javascripts/voteroom.js")" type="text/javascript"></script>
 <div class="container">
+	<h1>@setting.title<span style="font-size:large;margin-left:20px;">(<span id="member"></span>人がこの部屋にいます)</span></h1>
 	<div id="onError" class="alert alert-danger">
 		<p>
 			<strong>エラー!</strong> <span></span>
 		</p>
 	</div>
-	<h2><span id="member"></span>人がこの部屋にいます</h2>
-	<h3>あなたの推し事　<span id="yours">0</span>回</h3>
+	<div>
+		<h3 id="timeLimit" style="float:left;"></span></h3>
+		<h3 style="float:right;">あなたの推し事　<span id="yours">0</span>回</h3>
+		<div style="clear:both;"/>
+	</div>
 	<p>@setting.message</p>
 	@setting.buttons.map { b =>
 		<div>
-			<button class="button vote" style="background-color:#@b.color;" data-key="@b.key" data-color="#@b.color">
+			<button class="button vote" style="background-color:#@b.color;" data-key="@b.key" data-color="#@b.color" id="btn-@b.key">
 				<div style="float:left;">@b.text</div>
 				<div style="float:right;" id="num-@b.key">@counts(b.key)</div>
 			</button>
 		</div>
 	}
+	<div id="message"></div>
+	<a href="https://twitter.com/share" class="twitter-share-button" data-lang="ja" data-size="large">ツイート</a>
+	<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
 	<div id="debug" style="display:none;"></div>
 </div>
 <script>
 var app;
 $(function() {
-	var uri = "@Html(routes.Application.ws(setting.name).webSocketURL())";
-	app = new voteroom.VoteRoom(uri);
+	var uri = "@Html(routes.Application.ws(setting.name).webSocketURL())",
+		timeLimit = @setting.timeLimit,
+		clientId = "@clientId";
+	app = new voteroom.VoteRoom(uri, clientId, timeLimit);
 })
 </script>
 }
