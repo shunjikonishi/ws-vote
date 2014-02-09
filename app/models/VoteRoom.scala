@@ -86,7 +86,7 @@ class VoteRoom(setting: RoomSetting, redis: RedisService) {
           val count = redis.withClient(_.incr(key))
           count.foreach { n =>
             send("vote", msg, n)
-            if ((n % 10) == 0) {
+            if ((n % 1000) == 0) {
               channel.outChannel.push(Json.toJson(new Message(clientId,  msg, n)).toString)
             }
           }
@@ -148,7 +148,7 @@ object VoteRoom {
       Button("green", "緑", "00ff7f"),
       Button("purple", "紫", "9400d3")
     ),
-    voteLimit = Some(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2014-02-09 12:35:00"))
+    voteLimit = Some(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2014-02-14 07:00:00"))
   )
       
   sealed class Msg
