@@ -121,7 +121,6 @@ class VoteRoom(setting: RoomSetting, redis: RedisService) extends Room(setting.n
   }
   
   val scheduler = Akka.system.scheduler.schedule(20 seconds, 20 seconds) {
-    Logger.info("schedule");
     val count = redis.withClient(_.get(member_key))
     count.foreach { n =>
       val msg = new Message("member", "now", n.toLong)
