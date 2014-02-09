@@ -44,6 +44,9 @@ case class RoomSetting(
   def buttonText(key: String) = {
     buttons.find(_.key == key).map(_.text)
   }
+  
+  def canView(d: Date) = viewLimit.map(d.getTime < _.getTime).getOrElse(true)
+  def timeLimit = voteLimit.map(d => (d.getTime - System.currentTimeMillis) / 1000).getOrElse(0L)
 }
 
 class VoteRoom(setting: RoomSetting, redis: RedisService) {
@@ -83,10 +86,8 @@ class VoteRoom(setting: RoomSetting, redis: RedisService) {
           val count = redis.withClient(_.incr(key))
           count.foreach { n =>
             send("vote", msg, n)
-            if ((n % 100) == 0) {
-              setting.buttonText(msg).foreach { text =>
-                channel.outChannel.push(Json.toJson(new Message(clientId,  text, n)).toString)
-              }
+            if ((n % 10) == 0) {
+              channel.outChannel.push(Json.toJson(new Message(clientId,  msg, n)).toString)
             }
           }
       }
@@ -146,7 +147,8 @@ object VoteRoom {
       Button("pink", "ピンク", "ff69b4"),
       Button("green", "緑", "00ff7f"),
       Button("purple", "紫", "9400d3")
-    )
+    ),
+    voteLimit = Some(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2014-02-09 12:35:00"))
   )
       
   sealed class Msg

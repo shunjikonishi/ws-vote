@@ -1,6 +1,27 @@
 if (typeof(voteroom) == "undefined") voteroom = {};
 
 $(function() {
+	var MSG = {
+		WEBSOCKET_NOT_SUPPORTED: "ブラウザがWebSocketをサポートしていません。",
+		UNIT_SECOND: "秒",
+		UNIT_MINUTE: "分",
+		UNIT_HOUR: "時間",
+		UNIT_DAY: "日",
+		VOTE_END: "投票 終了",
+		TIMER_MSG: "残り {0}{1}",
+		JUST: "キリ番",
+		JUST_MSG: "{0}の{1}を押しました",
+		format: function(fmt) {
+			for (i = 1; i < arguments.length; i++) {
+				var reg = new RegExp("\\{" + (i - 1) + "\\}", "g")
+				fmt = fmt.replace(reg,arguments[i]);
+			}
+			return fmt;
+		}
+	};
+	var DAY = 24 * 60 * 60,
+		HOUR = 60 * 60,
+		MINUTE = 60
 	var debug = new Debugger($("#debug"));
 	function Debugger($el, max) {
 		var enabled = (location.hash == "#debug");
@@ -22,6 +43,41 @@ $(function() {
 			"log" : log
 		});
 	}
+	function Timer($el, time) {
+		function calc() {
+			var now = new Date(),
+				rest = Math.floor((limit - now.getTime()) / 1000),
+				next = 1,
+				unit = MSG.UNIT_SECOND;
+			if (rest <= 0) {
+				$el.text(MSG.VOTE_END);
+				return;
+			} 
+			if (rest > DAY) {
+				next = rest % DAY;
+				rest = Math.floor(rest / DAY);
+				unit = MSG.UNIT_DAY;
+			} else if (rest > HOUR) {
+				next = rest % HOUR;
+				rest = Math.floor(rest / HOUR);
+				unit = MSG.UNIT_HOUR;
+			} else if (rest > MINUTE) {
+				next = rest % MINUTE;
+				rest = Math.floor(rest / MINUTE);
+				unit = MSG.UNIT_MINUTE;
+			}
+			$el.text(MSG.format(MSG.TIMER_MSG, rest, unit));
+			setTimeout(calc, next * 1000);
+		}
+		function canVote() {
+			return time <= 0 || limit - Date.now() > 0;
+		}
+		var limit = Date.now() + (time * 1000);
+		calc();
+		$.extend(this, {
+			"canVote" : canVote
+		})
+	}
 	function isIOS() {
 		var ua = navigator.userAgent.toLowerCase();
 		if (ua.indexOf("iphone") != -1) return true;
@@ -30,10 +86,10 @@ $(function() {
 		
 		return false;
 	}
-	voteroom.VoteRoom = function(uri, clientId) {
+	voteroom.VoteRoom = function(uri, clientId, timeLimit) {
 		function createWebSocket() {
 			if (!window.WebSocket) {
-				$("#onError span").text("ブラウザがWebSocketをサポートしていません。");
+				$("#onError span").text(MSG.WEBSOCKET_NOT_SUPPORTED);
 				$("#onError").show();
 				return null;
 			}
@@ -65,8 +121,11 @@ $(function() {
 					$b.text(n1);
 				}
 			} else if (data.kind == clientId) {
-				var $p = $("<p/>");
-				$p.text(data.key + "の" + data.count + "を推しました");
+				var $btn = $("#btn-" + data.key),
+					$p = $("<p><span class='label label-success'></span><span></span></p>"),
+					$span = $p.find("span");
+				$($span[0]).css("background-color", $btn.attr("data-color")).text(MSG.JUST);
+				$($span[1]).text(MSG.format(MSG.JUST_MSG, $btn.find("div:eq(0)").text(), data.count));
 				$("#message").append($p);
 			}
 		}
@@ -75,7 +134,7 @@ $(function() {
 			retryCount = 0;
 			setTimeout(function() {
 				ws.send("###member###");
-			}, 1000);
+			}, 200);
 		}
 		function closeEvent(evt) {
 			debug.log("close: " + retryCount)
@@ -91,9 +150,11 @@ $(function() {
 			retryCount++;
 		}
 		function clickEvent(evt) {
+			if (!timer.canVote()) {
+				return;
+			}
 			var b = $(this),
 				key = b.attr("data-key");
-			
 			b.css("background-color", "#ccc");
 			setTimeout(function() {
 				b.css("background-color", b.attr("data-color"));
@@ -122,7 +183,8 @@ $(function() {
 		    retryCount = 0,
 		    $member = $("#member"),
 		    $yours = $("#yours"),
-		    ws = createWebSocket();
+		    ws = createWebSocket(),
+			timer = new Timer($("#timeLimit"), timeLimit);
 		if (location.hash == "#debug") {
 			$("#debug").show();
 		}

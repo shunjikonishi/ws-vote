@@ -5,6 +5,7 @@ import play.api.mvc._
 import models._
 import java.net.URI
 import java.util.UUID
+import java.util.Date
 
 object Application extends Controller {
 
@@ -17,7 +18,8 @@ object Application extends Controller {
   }
   
   def room(name: String) = Action { implicit request =>
-    VoteRoom.getSetting(name).map { setting =>
+    val d = new Date()
+    VoteRoom.getSetting(name).filter(_.canView(d)).map { setting =>
       val counts = setting.buttons.map { b =>
         val cnt = MyRedisService.withClient(_.get(name + "#" + b.key))
         (b.key, cnt.getOrElse("0"))
