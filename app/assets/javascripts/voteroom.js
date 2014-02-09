@@ -30,7 +30,7 @@ $(function() {
 		
 		return false;
 	}
-	voteroom.VoteRoom = function(uri) {
+	voteroom.VoteRoom = function(uri, clientId) {
 		function createWebSocket() {
 			if (!window.WebSocket) {
 				$("#onError span").text("ブラウザがWebSocketをサポートしていません。");
@@ -64,6 +64,10 @@ $(function() {
 				if (n1 > n2) {
 					$b.text(n1);
 				}
+			} else if (data.kind == clientId) {
+				var $p = $("<p/>");
+				$p.text(data.key + "の" + data.count + "を推しました");
+				$("#message").append($p);
 			}
 		}
 		function openEvent(evt) {
@@ -119,9 +123,6 @@ $(function() {
 		    $member = $("#member"),
 		    $yours = $("#yours"),
 		    ws = createWebSocket();
-		setInterval(function() {
-			if (ws) ws.send("###dummy###");
-		}, 25000);
 		if (location.hash == "#debug") {
 			$("#debug").show();
 		}

@@ -22,6 +22,7 @@ import play.api.libs.concurrent.Akka
 
 import akka.util.Timeout
 import akka.pattern.ask
+import java.util.Date
 
 import play.api.Play
 import play.api.Play.current
@@ -32,7 +33,18 @@ import flect.redis.RedisService
 object MyRedisService extends RedisService(Play.configuration.getString("redis.uri").get)
 
 case class Button(key: String, text: String, color: String)
-case class RoomSetting(name: String, title: String, message: String, buttons: List[Button])
+case class RoomSetting(
+  name: String, 
+  title: String, 
+  message: String, 
+  buttons: List[Button],
+  viewLimit: Option[Date] = None,
+  voteLimit: Option[Date] = None
+) {
+  def buttonText(key: String) = {
+    buttons.find(_.key == key).map(_.text)
+  }
+}
 
 class VoteRoom(setting: RoomSetting, redis: RedisService) {
   
@@ -56,7 +68,7 @@ class VoteRoom(setting: RoomSetting, redis: RedisService) {
     channel.send(Json.toJson(msg).toString)
   }
   
-  private def createIteratee: Iteratee[String, _] = {
+  private def createIteratee(clientId: String): Iteratee[String, _] = {
     Iteratee.foreach[String] { msg =>
       msg match {
         case "###member###" =>
@@ -69,7 +81,14 @@ class VoteRoom(setting: RoomSetting, redis: RedisService) {
         case _ =>
           val key = voteKey(msg)
           val count = redis.withClient(_.incr(key))
-          count.foreach(send("vote", msg, _))
+          count.foreach { n =>
+            send("vote", msg, n)
+            if ((n % 100) == 0) {
+              setting.buttonText(msg).foreach { text =>
+                channel.outChannel.push(Json.toJson(new Message(clientId,  text, n)).toString)
+              }
+            }
+          }
       }
     }.map { _ =>
       val count = redis.withClient(_.decr(member_key))
@@ -79,14 +98,21 @@ class VoteRoom(setting: RoomSetting, redis: RedisService) {
     }
   }
     
-  def join: (Iteratee[String,_], Enumerator[String]) = {
+  def join(clientId: String): (Iteratee[String,_], Enumerator[String]) = {
     Logger.info("Join to " + setting.name)
     connect
     
-    val in = createIteratee
+    val in = createIteratee(clientId)
     val count = redis.withClient(_.incr(member_key))
     count.foreach(send("member", "join", _))
     (in, channel.out)
+  }
+  
+  def reset = {
+    setting.buttons.foreach { b =>
+      val key = voteKey(b.key)
+      redis.withClient(_.del(key))
+    }
   }
   
   def close = {
@@ -94,7 +120,17 @@ class VoteRoom(setting: RoomSetting, redis: RedisService) {
     if (cnt != 0) {
       redis.withClient(_.decrby(member_key, cnt))
     }
+    scheduler.cancel
     channel.close
+  }
+  
+  val scheduler = Akka.system.scheduler.schedule(20 seconds, 20 seconds) {
+    Logger.info("schedule");
+    val count = redis.withClient(_.get(member_key))
+    count.foreach { n =>
+      val msg = new Message("member", "now", n.toLong)
+      channel.outChannel.push(Json.toJson(msg).toString)
+    }
   }
 }
 
@@ -104,7 +140,7 @@ object VoteRoom {
     name="default",
     title="DevSumi2014",
     message="お好きな色を推してください",
-    List(
+    buttons=List(
       Button("red", "赤", "ff0000"),
       Button("yellow", "黄", "ffff00"),
       Button("pink", "ピンク", "ff69b4"),
@@ -114,14 +150,14 @@ object VoteRoom {
   )
       
   sealed class Msg
-  case class Join(room: String)
+  case class Join(room: String, clientId: String)
   case class Quit(room: String)
   
   class MyActor extends Actor {
     def receive = {
-      case Join(room) => 
+      case Join(room, clientId) => 
         val ret = try {
-          getRoom(room).join
+          getRoom(room).join(clientId)
         } catch {
           case e: Exception =>
             e.printStackTrace
@@ -145,8 +181,8 @@ object VoteRoom {
   
 
   
-  def join(room: String): Future[(Iteratee[String,_], Enumerator[String])] = {
-    (actor ? Join(room)).asInstanceOf[Future[(Iteratee[String,_], Enumerator[String])]]
+  def join(room: String, clientId: String): Future[(Iteratee[String,_], Enumerator[String])] = {
+    (actor ? Join(room, clientId)).asInstanceOf[Future[(Iteratee[String,_], Enumerator[String])]]
   }
   
   def quit(room: String) = {
@@ -160,7 +196,7 @@ object VoteRoom {
     settings.get(name)
   }
   
-  private def getRoom(name: String): VoteRoom = {
+  def getRoom(name: String): VoteRoom = {
     getSetting(name).map { setting =>
       val room = rooms.get(name).filter(_.active)
       room match {

@@ -1,4 +1,4 @@
-@(setting: models.RoomSetting, counts: Map[String, String])(implicit request: RequestHeader)
+@(setting: models.RoomSetting, counts: Map[String, String], clientId: String)(implicit request: RequestHeader)
 
 @main(setting.title) {
 <style>
@@ -31,13 +31,15 @@
 			</button>
 		</div>
 	}
+	<div id="message"></div>
 	<div id="debug" style="display:none;"></div>
 </div>
 <script>
 var app;
 $(function() {
-	var uri = "@Html(routes.Application.ws(setting.name).webSocketURL())";
-	app = new voteroom.VoteRoom(uri);
+	var uri = "@Html(routes.Application.ws(setting.name).webSocketURL())",
+		clientId = "@clientId";
+	app = new voteroom.VoteRoom(uri, clientId);
 })
 </script>
 }
