@@ -41,7 +41,8 @@ case class RoomSetting(
   message: String, 
   buttons: List[Button],
   viewLimit: Option[Date] = None,
-  voteLimit: Option[Date] = None
+  voteLimit: Option[Date] = None,
+  roundNumber: Int = 1000
 ) {
   def buttonText(key: String) = {
     buttons.find(_.key == key).map(_.text)
@@ -85,7 +86,7 @@ class VoteRoom(setting: RoomSetting, redis: RedisService) extends Room(setting.n
           val key = voteKey(msg)
           val count = redis.withClient(_.incr(key))
           count.foreach { n =>
-            if ((n % 1000) == 0) {
+            if (setting.roundNumber > 0 && (n % setting.roundNumber) == 0) {
               channel.outChannel.push(createMessage(clientId,  msg, n))
             }
           }
@@ -142,7 +143,8 @@ object VoteRoom {
       Button("green", "緑", "00ff7f"),
       Button("purple", "紫", "9400d3")
     ),
-    voteLimit = Some(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2014-02-14 07:00:00"))
+    voteLimit = Some(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2014-02-14 07:00:00")),
+    roundNumber = 10
   )
   
   private var settings = Map(defaultSetting.name -> defaultSetting)
