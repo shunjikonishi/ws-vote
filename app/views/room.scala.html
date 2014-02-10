@@ -16,16 +16,15 @@
 </style>
 <script src="@routes.Assets.at("javascripts/voteroom.js")" type="text/javascript"></script>
 <div class="container">
-	<h1 class="page-header">@setting.title<span style="float:right;font-size:smaller;" id="timeLimit"></span></h1>
+	<h2 class="page-header">@setting.title<span style="float:right;font-size:medium;" id="timeLimit"></span></h2>
 	<div id="onError" class="alert alert-danger">
 		<p>
 			<strong>エラー!</strong> <span></span>
 		</p>
 	</div>
 	<div>
-		<div style="font-size:large;float:left;">部屋にいる人数：<span id="member"></span>人</div>
-		<h4 style="float:right;">あなたのクリック回数： <span id="yours">0</span>回</h4>
-		<div style="clear:both;"/>
+		<h4>部屋にいる人数：<span id="member"></span>人</h4>
+		<h4>あなたのクリック回数： <span id="yours">0</span>回</h4>
 	</div>
 	<p>@setting.message</p>
 	@setting.buttons.map { b =>
