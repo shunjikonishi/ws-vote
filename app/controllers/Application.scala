@@ -17,6 +17,10 @@ object Application extends Controller {
     Ok(views.html.index("Vote!"))
   }
   
+  def top = Action { implicit request =>
+    Ok(views.html.top("Vote!"))
+  }
+  
   def room(name: String) = Action { implicit request =>
     val d = new Date()
     VoteRoom.getSetting(name).filter(_.canView(d)).map { setting =>
