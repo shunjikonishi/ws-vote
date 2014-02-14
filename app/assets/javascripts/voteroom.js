@@ -43,6 +43,9 @@ $(function() {
 			"log" : log
 		});
 	}
+	function DummyTimer() {
+		this.canVote = function() { return true;}
+	}
 	function Timer($el, time) {
 		function calc() {
 			var now = new Date(),
@@ -150,8 +153,6 @@ $(function() {
 			retryCount++;
 		}
 		function clickEvent(evt) {
-			return;
-			/*
 			if (!timer.canVote()) {
 				return;
 			}
@@ -168,7 +169,6 @@ $(function() {
 			ws.send(key);
 			cnt++;
 			$yours.text(cnt);
-			*/
 		}
 		window.onunload = function() {
 			if (ws) {
@@ -180,9 +180,6 @@ $(function() {
 		} else {
 			$(".vote").click(clickEvent);
 		}
-		if (timeLimit < 0) {
-			timeLimit = 0;
-		}
 		var MAX_RETRY_COUNT = 5,
 		    RETRY_INTERVAL_BASE = 5,
 		    cnt = 0,
@@ -190,7 +187,9 @@ $(function() {
 		    $member = $("#member"),
 		    $yours = $("#yours"),
 		    ws = createWebSocket(),
-			timer = new Timer($("#timeLimit"), timeLimit);
+			timer = timeLimit < 0 ?
+				new DummyTimer() : 
+				new Timer($("#timeLimit"), timeLimit);
 		if (location.hash == "#debug") {
 			$("#debug").show();
 		}
