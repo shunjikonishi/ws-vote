@@ -43,6 +43,9 @@ $(function() {
 			"log" : log
 		});
 	}
+	function DummyTimer() {
+		this.canVote = function() { return true;}
+	}
 	function Timer($el, time) {
 		function calc() {
 			var now = new Date(),
@@ -184,7 +187,9 @@ $(function() {
 		    $member = $("#member"),
 		    $yours = $("#yours"),
 		    ws = createWebSocket(),
-			timer = new Timer($("#timeLimit"), timeLimit);
+			timer = timeLimit < 0 ?
+				new DummyTimer() : 
+				new Timer($("#timeLimit"), timeLimit);
 		if (location.hash == "#debug") {
 			$("#debug").show();
 		}

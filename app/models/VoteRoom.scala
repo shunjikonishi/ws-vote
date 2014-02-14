@@ -49,7 +49,14 @@ case class RoomSetting(
   }
   
   def canView(d: Date) = viewLimit.map(d.getTime < _.getTime).getOrElse(true)
-  def timeLimit = voteLimit.map(d => (d.getTime - System.currentTimeMillis) / 1000).getOrElse(0L)
+  def timeLimit = voteLimit.map { d =>
+    val n = d.getTime - System.currentTimeMillis
+    if (n <= 0) {
+      0
+    } else {
+      n / 1000
+    }
+  }.getOrElse(-1L)
 }
 
 class VoteRoom(setting: RoomSetting, redis: RedisService) extends Room(setting.name, redis) {
@@ -143,8 +150,8 @@ object VoteRoom {
       Button("green", "緑", "00ff7f"),
       Button("purple", "紫", "9400d3")
     ),
-    voteLimit = Some(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2014-02-14 07:00:00")),
-    roundNumber = 10
+    //voteLimit = Some(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2014-02-14 20:05:00")),
+    roundNumber = 1000
   )
   
   private var settings = Map(defaultSetting.name -> defaultSetting)
