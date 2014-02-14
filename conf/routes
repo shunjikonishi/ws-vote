@@ -7,7 +7,7 @@ GET     /                           controllers.Application.redirectToDefault
 GET     /top                        controllers.Application.top
 GET     /rooms/:name                controllers.Application.room(name)
 GET     /ws/:name                   controllers.Application.ws(name)
-GET     /reset/:name                controllers.Application.reset(name)
+#GET     /reset/:name                controllers.Application.reset(name)
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
