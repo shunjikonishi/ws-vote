@@ -150,6 +150,8 @@ $(function() {
 			retryCount++;
 		}
 		function clickEvent(evt) {
+			return;
+			/*
 			if (!timer.canVote()) {
 				return;
 			}
@@ -166,6 +168,7 @@ $(function() {
 			ws.send(key);
 			cnt++;
 			$yours.text(cnt);
+			*/
 		}
 		window.onunload = function() {
 			if (ws) {
