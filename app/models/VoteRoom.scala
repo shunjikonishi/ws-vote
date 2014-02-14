@@ -83,6 +83,7 @@ class VoteRoom(setting: RoomSetting, redis: RedisService) extends Room(setting.n
         case "###dummy###" =>
           None
         case _ =>
+          /*
           val key = voteKey(msg)
           val count = redis.withClient(_.incr(key))
           count.foreach { n =>
@@ -91,6 +92,8 @@ class VoteRoom(setting: RoomSetting, redis: RedisService) extends Room(setting.n
             }
           }
           count.map(n => createMessage("vote", msg, n.toLong))
+          */
+          None
       }
       /*
     }.redisMsg { msg =>
