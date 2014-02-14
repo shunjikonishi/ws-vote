@@ -83,6 +83,7 @@ class VoteRoom(setting: RoomSetting, redis: RedisService) extends Room(setting.n
         case "###dummy###" =>
           None
         case _ =>
+          /*
           val key = voteKey(msg)
           val count = redis.withClient(_.incr(key))
           count.foreach { n =>
@@ -91,6 +92,8 @@ class VoteRoom(setting: RoomSetting, redis: RedisService) extends Room(setting.n
             }
           }
           count.map(n => createMessage("vote", msg, n.toLong))
+          */
+          None
       }
       /*
     }.redisMsg { msg =>
@@ -144,7 +147,7 @@ object VoteRoom {
       Button("purple", "紫", "9400d3")
     ),
     voteLimit = Some(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2014-02-14 07:00:00")),
-    roundNumber = 10
+    roundNumber = 1000
   )
   
   private var settings = Map(defaultSetting.name -> defaultSetting)

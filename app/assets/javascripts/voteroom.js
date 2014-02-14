@@ -150,6 +150,8 @@ $(function() {
 			retryCount++;
 		}
 		function clickEvent(evt) {
+			return;
+			/*
 			if (!timer.canVote()) {
 				return;
 			}
@@ -166,6 +168,7 @@ $(function() {
 			ws.send(key);
 			cnt++;
 			$yours.text(cnt);
+			*/
 		}
 		window.onunload = function() {
 			if (ws) {
@@ -176,6 +179,9 @@ $(function() {
 			$(".vote").on("touchstart", clickEvent);
 		} else {
 			$(".vote").click(clickEvent);
+		}
+		if (timeLimit < 0) {
+			timeLimit = 0;
 		}
 		var MAX_RETRY_COUNT = 5,
 		    RETRY_INTERVAL_BASE = 5,
