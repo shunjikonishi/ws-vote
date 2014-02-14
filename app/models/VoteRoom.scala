@@ -158,7 +158,8 @@ object VoteRoom {
     defaultSetting.name -> defaultSetting,
     "demo" -> defaultSetting.copy(
       name="demo",
-      title="WebSocketデモ"
+      title="WebSocketデモ",
+      voteLimit = None
     )
   )
   private var rooms = Map.empty[String, VoteRoom]
