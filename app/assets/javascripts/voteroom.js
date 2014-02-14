@@ -73,7 +73,7 @@ $(function() {
 			setTimeout(calc, next * 1000);
 		}
 		function canVote() {
-			return time <= 0 || limit - Date.now() > 0;
+			return limit - Date.now() > 0;
 		}
 		var limit = Date.now() + (time * 1000);
 		calc();

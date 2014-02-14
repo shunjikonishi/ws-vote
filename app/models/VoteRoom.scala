@@ -150,11 +150,18 @@ object VoteRoom {
       Button("green", "緑", "00ff7f"),
       Button("purple", "紫", "9400d3")
     ),
-    //voteLimit = Some(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2014-02-14 20:05:00")),
+    voteLimit = Some(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2014-02-14 07:00:00")),
     roundNumber = 1000
   )
   
-  private var settings = Map(defaultSetting.name -> defaultSetting)
+  private var settings = Map(
+    defaultSetting.name -> defaultSetting,
+    "demo" -> defaultSetting.copy(
+      name="demo",
+      title="WebSocketデモ",
+      voteLimit = Some(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2014-02-14 11:30:00"))
+    )
+  )
   private var rooms = Map.empty[String, VoteRoom]
       
   def getSetting(name: String): Option[RoomSetting] = settings.get(name)
