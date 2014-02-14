@@ -10,7 +10,7 @@ import java.util.Date
 object Application extends Controller {
 
   def redirectToDefault = Action { implicit request =>
-    Redirect(routes.Application.room("default"))
+    Redirect(routes.Application.room("demo"))
   }
   
   def index = Action { implicit request =>

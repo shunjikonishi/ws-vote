@@ -159,7 +159,7 @@ object VoteRoom {
     "demo" -> defaultSetting.copy(
       name="demo",
       title="WebSocketデモ",
-      voteLimit = Some(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2014-02-14 11:30:00"))
+      voteLimit = Some(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2014-02-14 11:40:00"))
     )
   )
   private var rooms = Map.empty[String, VoteRoom]
