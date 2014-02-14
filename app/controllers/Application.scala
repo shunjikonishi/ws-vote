@@ -43,11 +43,4 @@ object Application extends Controller {
     VoteRoom.join(name, clientId)
   }
   
-  def loadtest(name: String, threads: Int, count: Int) = Action { implicit request =>
-    val uri = new URI("ws://ws-vote.herokuapp.com/ws/default")
-    val setting = VoteRoom.defaultSetting
-    
-    new LoadTest(uri, setting).run(threads, count)
-    Ok(s"loadtest: $name, $threads, $count, $uri");
-  }
 }
