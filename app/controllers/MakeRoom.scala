@@ -22,4 +22,10 @@ object MakeRoom extends Controller {
   	}
   	(in, out)
   }
+
+  def test = Action {
+     VoteRoom.getSetting("default").foreach(VoteRoom.save(_))
+    val demo = VoteRoom.getSetting("demo").foreach(VoteRoom.save(_))
+    Ok("OK")
+  }
 }

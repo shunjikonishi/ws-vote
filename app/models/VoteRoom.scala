@@ -34,31 +34,6 @@ import flect.redis.RoomHandler
 
 object MyRedisService extends RedisService(Play.configuration.getString("redis.uri").get)
 
-case class Button(key: String, text: String, color: String)
-case class RoomSetting(
-  name: String, 
-  title: String, 
-  message: String, 
-  buttons: List[Button],
-  viewLimit: Option[Date] = None,
-  voteLimit: Option[Date] = None,
-  roundNumber: Int = 1000
-) {
-  def buttonText(key: String) = {
-    buttons.find(_.key == key).map(_.text)
-  }
-  
-  def canView(d: Date) = viewLimit.map(d.getTime < _.getTime).getOrElse(true)
-  def timeLimit = voteLimit.map { d =>
-    val n = d.getTime - System.currentTimeMillis
-    if (n <= 0) {
-      0
-    } else {
-      n / 1000
-    }
-  }.getOrElse(-1L)
-}
-
 class VoteRoom(setting: RoomSetting, redis: RedisService) extends Room(setting.name, redis) {
   
   Logger.info("Create ChatRoom: " + setting.name)
@@ -154,17 +129,17 @@ object VoteRoom {
     roundNumber = 1000
   )
   
-  private var settings = Map(
-    defaultSetting.name -> defaultSetting,
-    "demo" -> defaultSetting.copy(
-      name="demo",
-      title="WebSocketデモ",
-      voteLimit = None
-    )
-  )
   private var rooms = Map.empty[String, VoteRoom]
       
-  def getSetting(name: String): Option[RoomSetting] = settings.get(name)
+  def getSetting(name: String): Option[RoomSetting] = {
+    MyRedisService.hget("room", name).map { str =>
+      RoomSetting.fromJson(str)
+    }
+  }
+
+  def save(setting: RoomSetting) = {
+    MyRedisService.hset("room", setting.name, setting.toJson)
+  }
   
   def join(room: String, clientId: String): Future[(Iteratee[String,_], Enumerator[String])] = {
     (actor ? Join(room, clientId)).asInstanceOf[Future[(Iteratee[String,_], Enumerator[String])]]
