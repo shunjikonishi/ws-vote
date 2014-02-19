@@ -27,6 +27,7 @@ $(function() {
 		}
 		var $ok = $("#name-ok"),
 			$ng = $("#name-ng"),
+			patternSet = false,
 			socket;
 		if (!window.WebSocket) {
 			$("#onError span").text(MSG.WEBSOCKET_NOT_SUPPORTED);
@@ -44,5 +45,10 @@ $(function() {
 				socket.send(text);
 			}
 		}).focus();
+		$("#pattern").patternInput({
+			"onFinish" : function(value) {
+				alert("Finish: " + value.join(","));
+			}
+		})
 	}
 })

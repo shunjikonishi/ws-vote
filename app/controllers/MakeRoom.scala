@@ -6,6 +6,7 @@ import models._
 import play.api.libs.iteratee.Iteratee
 import play.api.libs.iteratee.Concurrent
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import java.util.Date
 
 object MakeRoom extends Controller {
 
@@ -17,7 +18,7 @@ object MakeRoom extends Controller {
   	val (out, channel) = Concurrent.broadcast[String]
 
   	val in = Iteratee.foreach[String] { key =>
-  		val ok = MyRedisService.withClient(_.get(key)).map(_ => "NG").getOrElse("OK")
+  		val ok = VoteRoom.getSetting(key).filter(_.canView(new Date())).map(_ => "NG").getOrElse("OK")
   		channel.push(ok)
   	}
   	(in, out)

@@ -3,25 +3,15 @@ package models
 import akka.actor.ActorRef
 import akka.actor.Actor
 import akka.actor.Props
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.Future
 
 import play.api.Logger
 import play.api.libs.json.Json
-import play.api.libs.json.JsValue
-import play.api.libs.json.JsObject
-import play.api.libs.json.JsString
-import play.api.libs.json.JsSuccess
-import play.api.libs.json.JsError
 import play.api.libs.iteratee.Iteratee
 import play.api.libs.iteratee.Enumerator
-import play.api.libs.iteratee.Done
-import play.api.libs.iteratee.Input
-import play.api.libs.iteratee.Concurrent
+import scala.concurrent.duration.DurationInt
+//import play.api.libs.iteratee.Concurrent
 import play.api.libs.concurrent.Akka
 
-import akka.util.Timeout
-import akka.pattern.ask
 import java.util.Date
 
 import play.api.Play
@@ -112,7 +102,7 @@ class VoteRoom(setting: RoomSetting, redis: RedisService) extends Room(setting.n
   }
 }
 
-object VoteRoom {
+object VoteRoom extends RoomManager(MyRedisService) {
   
   val defaultSetting = RoomSetting(
     name="default",
@@ -125,75 +115,8 @@ object VoteRoom {
       Button("green", "緑", "00ff7f"),
       Button("purple", "紫", "9400d3")
     ),
-    voteLimit = Some(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2014-02-14 07:00:00")),
     roundNumber = 1000
   )
-  
-  private var rooms = Map.empty[String, VoteRoom]
-      
-  def getSetting(name: String): Option[RoomSetting] = {
-    MyRedisService.hget("room", name).map { str =>
-      RoomSetting.fromJson(str)
-    }
-  }
-
-  def save(setting: RoomSetting) = {
-    MyRedisService.hset("room", setting.name, setting.toJson)
-  }
-  
-  def join(room: String, clientId: String): Future[(Iteratee[String,_], Enumerator[String])] = {
-    (actor ? Join(room, clientId)).asInstanceOf[Future[(Iteratee[String,_], Enumerator[String])]]
-  }
-  
-  def getRoom(name: String): VoteRoom = {
-    getSetting(name).map { setting =>
-      val room = rooms.get(name).filter(_.isActive)
-      room match {
-        case Some(x) => x
-        case None =>
-          val ret = new VoteRoom(setting, MyRedisService)
-          rooms = rooms + (name -> ret)
-          ret
-      }
-    }.getOrElse(throw new IllegalStateException("Room not found: " + name))
-  }
-  
-  def error(msg: String): (Iteratee[String,_], Enumerator[String]) = {
-    Logger.info("Can not connect room: " + msg)
-    val in = Done[String,Unit]((),Input.EOF)
-    val out =  Enumerator[String](JsObject(Seq("error" -> JsString(msg))).toString).andThen(Enumerator.enumInput(Input.EOF))
-    (in, out)
-  }
-  
-  implicit val timeout = Timeout(5 seconds)
-  
-  private val actor = Akka.system.actorOf(Props(new MyActor()))
-  
-  private sealed class Msg
-  private case class Join(room: String, clientId: String)
-  
-  class MyActor extends Actor {
-    def receive = {
-      case Join(room, clientId) => 
-        val ret = try {
-          getRoom(room).join(clientId)
-        } catch {
-          case e: Exception =>
-            e.printStackTrace
-            error(e.getMessage)
-        }
-        sender ! ret
-    }
-    
-    
-    override def postStop() = {
-      Logger.info("!!! postStop !!!")
-      rooms.values.filter(_.isActive).foreach(_.close)
-      rooms = Map.empty[String, VoteRoom]
-      MyRedisService.close
-      super.postStop()
-    }
-  }
   
 }
 
