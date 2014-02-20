@@ -67,6 +67,7 @@ $(function() {
 					pattern = value;
 					$patternMsg.text(MSG.CONFIRM_PATTERN);
 				}
+				$("#pattern").patternInput("clear");
 			}
 		})
 		$btnNext.click(function() {
