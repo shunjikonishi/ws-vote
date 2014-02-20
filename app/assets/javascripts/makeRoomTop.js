@@ -40,10 +40,10 @@ $(function() {
 		if (!window.WebSocket) {
 			$("#onError span").text(MSG.WEBSOCKET_NOT_SUPPORTED);
 			$("#onError").show();
-			return;
+		} else {
+			socket = new WebSocket(uri);
+			socket.onmessage = receiveEvent;
 		}
-		socket = new WebSocket(uri);
-		socket.onmessage = receiveEvent;
 
 		$("#roomName").keyup(function() {
 			var text = $(this).val();
