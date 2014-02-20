@@ -58,7 +58,8 @@ $(function() {
 				value = value.join("")
 				if (pattern) {
 					if (pattern == value) {
-						alert("OK: " + value);
+						$("#pass").val(value)
+						$("#form").get(0).submit();
 					} else {
 						$patternMsg.text(MSG.RETRY_PATTERN);
 						pattern = null;
@@ -73,7 +74,7 @@ $(function() {
 		$btnNext.click(function() {
 			$("#step1").hide();
 			$("#step2").fadeIn("slow");
-		});
+		}).attr("disabled", "disabled");
 		$btnPrev.click(function() {
 			pattern = null;
 			$("#step2").hide();

@@ -103,6 +103,7 @@ class VoteRoom(setting: RoomSetting, redis: RedisService) extends Room(setting.n
 }
 
 object VoteRoom extends RoomManager(MyRedisService) {
+  val appName = "Vote!"
   
   val defaultSetting = RoomSetting(
     name="default",

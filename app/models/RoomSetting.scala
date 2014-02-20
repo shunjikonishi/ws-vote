@@ -11,6 +11,7 @@ case class RoomSetting(
   buttons: List[Button],
   viewLimit: Option[Date] = None,
   voteLimit: Option[Date] = None,
+  password: Option[String] = None,
   roundNumber: Int = 1000
 ) {
   def buttonText(key: String) = {

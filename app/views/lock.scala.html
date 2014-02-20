@@ -1,0 +1,33 @@
+@(title: String, name: String)(implicit request: RequestHeader)
+
+@main(title) {
+<style>
+</style>
+<link rel="stylesheet" type="text/css" href="@routes.Assets.at("javascripts/ext/pattern-input/pattern-input.css")"/>
+<script src="@routes.Assets.at("javascripts/ext/pattern-input/pattern-input.js")"></script>
+<div class="container">
+	<h1 class="page-header">@name の編集</h1>
+	<div>
+		<div id="pattern" class="center-block"></div>
+	</div>
+</div>
+<form action="@routes.MakeRoom.pass" method="post" id="form">
+	<input type="hidden" name="name" value="@name">
+	<input type="hidden" name="pass" id="pass">
+</form>
+<script>
+var app;
+$(function() {
+	$("body").bind("touchmove", function(event) {
+		event.preventDefault();
+	});
+	$("#pattern").patternInput({
+		"onFinish" : function(value) {
+			value = value.join("")
+			$("#pass").val(value)
+			$("#form").get(0).submit();
+		}
+	})
+})
+</script>
+}

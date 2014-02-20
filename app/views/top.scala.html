@@ -17,9 +17,9 @@ button { margin-top: 10px;}
 				<strong>エラー!</strong> <span></span>
 			</p>
 		</div>
-		<form class="form-horizontal" role="form">
+		<form class="form-horizontal" role="form" id="form" method="post" action="register">
 			<div class="form-group">
-				<label for="roomName" class="col-sm-2 control-label">RoomName</label>
+				<label for="name" class="col-sm-2 control-label">RoomName</label>
 				<div class="col-sm-10">
 					<input type="text" class="form-control" id="roomName" name="name" placeholder="ルーム名(英数)を入力してください">
 					<div>
@@ -28,6 +28,7 @@ button { margin-top: 10px;}
 					</div>
 				</div>
 			</div>
+			<input type="hidden" name="pass" id="pass">
 		</form>
 		<div>
 			<button id="btnNext" class="btn btn-default center-block">次へ</button>

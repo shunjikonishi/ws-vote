@@ -2,6 +2,8 @@ package controllers
 
 import play.api._
 import play.api.mvc._
+import play.api.data._
+import play.api.data.Forms._
 import models._
 import play.api.libs.iteratee.Iteratee
 import play.api.libs.iteratee.Concurrent
@@ -11,7 +13,7 @@ import java.util.Date
 object MakeRoom extends Controller {
 
   def top = Action { implicit request =>
-    Ok(views.html.top("Vote!"))
+    Ok(views.html.top(VoteRoom.appName))
   }
   
   def checkName = WebSocket.using[String] { request =>
@@ -22,6 +24,51 @@ object MakeRoom extends Controller {
   		channel.push(ok)
   	}
   	(in, out)
+  }
+
+  case class EditData(name: String, pass: String)
+  val editForm = Form(mapping(
+    "name" -> text,
+    "pass" -> text
+  )(EditData.apply)(EditData.unapply))
+
+  def register = Action { implicit request =>
+    val data = editForm.bindFromRequest.get
+    VoteRoom.getSetting(data.name).foreach(VoteRoom.remove(_))
+    val setting = VoteRoom.defaultSetting.copy(
+      name=data.name,
+      password=Some(data.pass),
+      voteLimit=Some(new Date(System.currentTimeMillis + (60 * 60 * 1000))),
+      viewLimit=Some(new Date(System.currentTimeMillis + (24 * 60 * 60 * 1000)))
+    )
+    VoteRoom.save(setting)
+    Redirect(routes.MakeRoom.edit(data.name)).flashing(
+      "pass" -> data.pass.hashCode.toString
+    )
+  }
+
+  def edit(name: String) = Action { implicit request =>
+    VoteRoom.getSetting(name) match {
+      case Some(setting) =>
+        val pass = flash.get("pass").getOrElse("")
+        setting.password.map(_.hashCode.toString).filter(_ == pass) match {
+          case Some(x) =>
+            Ok(views.html.edit(VoteRoom.appName, setting)).flashing(
+              "pass" -> pass
+            )
+          case None =>
+            Ok(views.html.lock(VoteRoom.appName, name))
+        }
+      case None =>
+        NotFound
+    }
+  }
+
+  def pass = Action { implicit request =>
+    val data = editForm.bindFromRequest.get
+    Redirect(routes.MakeRoom.edit(data.name)).flashing(
+      "pass" -> data.pass.hashCode.toString
+    )
   }
 
   def test = Action {

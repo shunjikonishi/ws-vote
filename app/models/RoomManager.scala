@@ -32,6 +32,12 @@ class RoomManager(redis: RedisService) {
   def save(setting: RoomSetting) = {
     redis.hset("room", setting.name, setting.toJson)
   }
+
+  def remove(setting: RoomSetting) = {
+    setting.buttons.foreach(b => redis.del(setting.name + "#" + b.key))
+    redis.del(setting.name + "-members")
+    redis.hdel("room", setting.name)
+  }
   
   def join(room: String, clientId: String): Future[(Iteratee[String,_], Enumerator[String])] = {
     (actor ? Join(room, clientId)).asInstanceOf[Future[(Iteratee[String,_], Enumerator[String])]]

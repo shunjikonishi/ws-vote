@@ -6,7 +6,9 @@
 GET     /                           controllers.Application.redirectToDefault
 GET     /makeRoom/top               controllers.MakeRoom.top
 GET     /makeRoom/checkName         controllers.MakeRoom.checkName
-GET     /makeRoom/test              controllers.MakeRoom.test
+POST    /makeRoom/register          controllers.MakeRoom.register
+POST    /makeRoom/pass              controllers.MakeRoom.pass
+GET     /makeRoom/edit/:name        controllers.MakeRoom.edit(name)
 GET     /rooms/:name                controllers.Application.room(name)
 GET     /ws/:name                   controllers.Application.ws(name)
 #GET     /reset/:name                controllers.Application.reset(name)
