@@ -10,14 +10,14 @@ $(function() {
 		INPUT_PATTERN: "ルーム設定を変更するためのパターンロックを設定してください",
 		RETRY_PATTERN: "パターンが異なります。もう一度パターンを設定しなおしてください"
 	};
+	function isMobile() {
+		return navigator.userAgent.indexOf('iPhone') > 0 ||
+			navigator.userAgent.indexOf('iPad') > 0 ||
+			navigator.userAgent.indexOf('iPod') > 0 ||
+			navigator.userAgent.indexOf('Android') > 0 ||
+			navigator.userAgent.indexOf('Mobile') > 0;
+	}
 	function Control($el) {
-		var $basic = $("#basic"),
-			$buttons = $("#buttons"),
-			$password = $("#password"),
-			$title = $("#ctrl-title"),
-			$leftIcon = $("#icon-left"),
-			$rightIcon = $("#icon-right");
-
 		function left() {
 			var $hide, $show;
 			if ($basic.is(":visible")) {
@@ -28,10 +28,11 @@ $(function() {
 				$show = $password;
 			}
 			if ($hide && $show) {
-				show($hide, $show, "left");
+				show($hide, $show, "right");
 			}
 		}
 		function right() {
+			var $hide, $show;
 			if ($password.is(":visible")) {
 				$hide = $password;
 				$show = $buttons;
@@ -40,25 +41,33 @@ $(function() {
 				$show = $basic;
 			}
 			if ($hide && $show) {
-				show($hide, $show, "right");
+				show($hide, $show, "left");
 			}
 		}
 		function show($hide, $show, direction) {
 			$hide.hide();
-			$show.show();
-			$title.text($show.attr("data-title"));
-			if ($show == $basic) {
-				$leftIcon.hide();
-				$rightIcon.show();
-			} else if ($show == $password) {
-				$leftIcon.show();
-				$rightIcon.hide();
-			} else {
-				$leftIcon.show();
-				$rightIcon.show();
-			}
+			$show.show(0, function() {
+				$title.text($show.attr("data-title"));
+				if ($show == $basic) {
+					$leftIcon.hide();
+					$rightIcon.show();
+				} else if ($show == $password) {
+					$leftIcon.show();
+					$rightIcon.hide();
+				} else {
+					$leftIcon.show();
+					$rightIcon.show();
+				}
+			});
 		}
-		$el.swipe({
+		var $basic = $("#basic"),
+			$buttons = $("#buttons"),
+			$password = $("#password"),
+			$title = $("#ctrl-title"),
+			$leftIcon = $("#icon-left"),
+			$rightIcon = $("#icon-right");
+
+		$(".swipable").swipe({
 			swipe:function(event, direction, distance, duration, fingerCount) {
 				switch (direction) {
 					case "right":
@@ -71,14 +80,69 @@ $(function() {
 			},
 			threshold: 0
 		});
+		$("body").bind("touchmove", function(event) {
+			if ($password.is(":visible")) {
+				event.preventDefault();
+			}
+		});
+		$leftIcon.click(right);
+		$rightIcon.click(left);
 	}
 	voteroom.EditRoom = function(setting) {
+		function init() {
+			$("#voteLimit").datetimepicker({
+				"useSeconds" : false,
+				"minuteStepping" : 15
+			});
+			$("#viewLimit").datetimepicker({
+				"pickTime" : false
+			});
+			$(".vote").each(function() {
+				var $b = $(this);
+				$b.attr("data-color", $b.css("background-color"));
+			});
+			var evtStart, evtEnd;
+			if (isMobile()) {
+				evtStart = "touchstart";
+				evtEnd = "touchend";
+			} else {
+				evtStart = "mousedown";
+				evtEnd = "mouseup";
+			}
+			$(".vote").bind(evtStart, function() {
+				var $b = $(this),
+					key = $b.attr("data-key");
+				btnPressed = key;
+				var cnt = ++pressCount;
+				setTimeout(function() {
+					if (pressCount == cnt && btnPressed == key) {
+						alert("test: " + key)
+					}
+					btnPressed = null;
+				}, 1000);
+			}).bind(evtEnd, function() {
+				var $b = $(this),
+					orgColor = $b.attr("data-color"),
+					curColor = $b.css("background-color");
+				if (btnPressed == $b.attr("data-key")) {
+					if (orgColor == curColor) {
+						$b.css("background-color", "#ccc");
+					} else {
+						$b.css("background-color", orgColor);
+					}
+				}
+				btnPressed = null;
+			})
+		}
 		$("#pattern").patternInput({
 			"onFinish" : function(value) {
 				value = value.join("")
 				alert("OK: " + value);
 			}
 		});
-		var ctrl = new Control($("#ctrl"));
+		var ctrl = new Control($("#ctrl")),
+			btnPressed = null,
+			pressCount = 0;
+		init();
 	}
 })

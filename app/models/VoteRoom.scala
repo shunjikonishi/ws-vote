@@ -107,14 +107,14 @@ object VoteRoom extends RoomManager(MyRedisService) {
   
   val defaultSetting = RoomSetting(
     name="default",
-    title="DevSumi2014",
+    title="Vote!",
     message="お好きな色を推してください",
     buttons=List(
-      Button("red", "赤", "ff0000"),
-      Button("yellow", "黄", "ffff00"),
-      Button("pink", "ピンク", "ff69b4"),
-      Button("green", "緑", "00ff7f"),
-      Button("purple", "紫", "9400d3")
+      Button("1", "赤", "ff0000"),
+      Button("2", "黄", "ffff00"),
+      Button("3", "ピンク", "ff69b4"),
+      Button("4", "緑", "00ff7f"),
+      Button("5", "紫", "9400d3")
     ),
     roundNumber = 1000
   )
