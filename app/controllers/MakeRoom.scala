@@ -71,9 +71,7 @@ object MakeRoom extends Controller {
         val pass = flash.get("pass").getOrElse("")
         setting.password.map(_.hashCode.toString).filter(_ == pass) match {
           case Some(x) =>
-            Ok(views.html.edit(VoteRoom.appName, setting)).flashing(
-              "pass" -> pass
-            )
+            Ok(views.html.edit(VoteRoom.appName, setting))
           case None =>
             Ok(views.html.lock(VoteRoom.appName, name))
         }

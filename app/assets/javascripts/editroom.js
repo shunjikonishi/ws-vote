@@ -119,7 +119,7 @@ $(function() {
 						alert("test: " + key)
 					}
 					btnPressed = null;
-				}, 1000);
+				}, 750);
 			}).bind(evtEnd, function() {
 				var $b = $(this),
 					orgColor = $b.attr("data-color"),
