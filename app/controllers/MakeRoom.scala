@@ -66,7 +66,7 @@ object MakeRoom extends Controller {
   }
 
   def edit(name: String) = Action { implicit request =>
-    VoteRoom.getSetting(name) match {
+    VoteRoom.getSetting(name).filter(_.canView(new Date())) match {
       case Some(setting) =>
         val pass = flash.get("pass").getOrElse("")
         setting.password.map(_.hashCode.toString).filter(_ == pass) match {

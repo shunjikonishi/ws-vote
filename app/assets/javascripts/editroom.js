@@ -17,6 +17,18 @@ $(function() {
 			navigator.userAgent.indexOf('Android') > 0 ||
 			navigator.userAgent.indexOf('Mobile') > 0;
 	}
+	function rgb2hex(str) {
+		var parts = str.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+		if (parts.length == 4) {
+			delete parts[0];
+			for (var i = 1; i <= 3; ++i) {
+			    parts[i] = parseInt(parts[i]).toString(16);
+			    if (parts[i].length == 1) parts[i] = '0' + parts[i];
+			} 
+			return '#'+parts.join('');
+		}
+		return str;
+	}
 	function Control($el) {
 		function left() {
 			var $hide, $show;
@@ -46,7 +58,7 @@ $(function() {
 		}
 		function show($hide, $show, direction) {
 			$hide.hide();
-			$show.show(0, function() {
+			$show.show("slide", {"direction" : direction}, 750, function() {
 				$title.text($show.attr("data-title"));
 				if ($show == $basic) {
 					$leftIcon.hide();
@@ -116,7 +128,7 @@ $(function() {
 				var cnt = ++pressCount;
 				setTimeout(function() {
 					if (pressCount == cnt && btnPressed == key) {
-						alert("test: " + key)
+						editButton($b);
 					}
 					btnPressed = null;
 				}, 750);
@@ -133,6 +145,26 @@ $(function() {
 				}
 				btnPressed = null;
 			})
+			$("#button-color").change(function() {
+				var value = $(this).val();
+				$(this).css("background-color", value);
+			})
+			$("#button-save").click(updateButton);
+		}
+		function editButton($b) {
+			$editingButton = $b;
+			$("#button-caption").val($b.find("div").text());
+			$("#button-color").val(rgb2hex($b.attr("data-color"))).change();
+			$("#button-dialog").modal();
+		}
+		function updateButton() {
+console.log("test1: " + $editingButton);
+			if ($editingButton) {
+				$editingButton.find("div").text($("#button-caption").val());
+				$editingButton.css("background-color", $("#button-color").val());
+				$editingButton.attr("data-color", $editingButton.css("background-color"));
+			}
+			$("#button-dialog").modal("hide");
 		}
 		$("#pattern").patternInput({
 			"onFinish" : function(value) {
@@ -142,7 +174,8 @@ $(function() {
 		});
 		var ctrl = new Control($("#ctrl")),
 			btnPressed = null,
-			pressCount = 0;
+			pressCount = 0,
+			$editingButton = null;
 		init();
 	}
 })
