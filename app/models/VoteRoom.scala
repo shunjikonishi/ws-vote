@@ -64,6 +64,7 @@ class VoteRoom(setting: RoomSetting, redis: RedisService) extends Room(setting.n
           }
           count.map(n => createMessage("vote", msg, n.toLong))
       }
+    /*
     }.redisMsg { msg =>
       Logger.info("test: " + msg)
       if (msg.indexOf("red") == -1) {
@@ -71,6 +72,7 @@ class VoteRoom(setting: RoomSetting, redis: RedisService) extends Room(setting.n
       } else {
         None
       }
+    */
     }.disconnect { () =>
       val count = redis.withClient(_.decr(member_key))
       count.foreach(sendMessage("member", "quit", _))
